@@ -21,21 +21,21 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const { data: users, error } = await db
+  const { data: user, error } = await db
     .from("user")
     .select("*")
     .eq("email", email)
     .limit(1)
     .single()
 
-  if (error || !users) {
+  if (error || !user) {
     return withCORS(
       NextResponse.json({ error: "Email tidak ditemukan" }, { status: 404 }),
       request
     )
   }
 
-  const isValid = await verifyPassword(password, users.password)
+  const isValid = await verifyPassword(password, user.password)
   if (!isValid) {
     return withCORS(
       NextResponse.json({ error: "Password salah" }, { status: 401 }),
@@ -44,10 +44,10 @@ export async function POST(request: NextRequest) {
   }
 
   const userPayload: User = {
-    id: users.id,
-    email: users.email,
-    nama: users.nama,
-    role: users.role,
+    id: user.id,
+    email: user.email,
+    nama: user.nama,
+    role: user.role,
     password: "",
   }
 
