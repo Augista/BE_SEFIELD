@@ -1,4 +1,3 @@
-
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { generateToken, verifyPassword } from "@/lib/auth";
@@ -14,25 +13,31 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const user = await db.user.findUnique({ where: { email } });
-  if (!user) {
+  const { data: users, error } = await db
+    .from("user")
+    .select("*")
+    .eq("email", email)
+    .limit(1)
+    .single(); 
+
+  if (error || !users) {
     return NextResponse.json(
       { error: "Email tidak ditemukan" },
       { status: 404 }
     );
   }
 
-  const isValid = await verifyPassword(password, user.password);
+  const isValid = await verifyPassword(password, users.password);
   if (!isValid) {
     return NextResponse.json({ error: "Password salah" }, { status: 401 });
   }
 
   const userPayload: User = {
-    id: user.id,
-    email: user.email,
-    nama: "",
-    role: "",
-    password: ""
+    id: users.id,
+    email: users.email,
+    nama: users.nama,
+    role: users.role,
+    password: "", 
   };
 
   const token = generateToken(userPayload);
@@ -46,7 +51,7 @@ export async function POST(request: NextRequest) {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: 60 * 60, // 1 jam
+    maxAge: 60 * 60, // 1 hour
   });
 
   return response;

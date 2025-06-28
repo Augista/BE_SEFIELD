@@ -1,81 +1,73 @@
-import { db } from "@/lib/db"; 
-import { Field } from "@/domain/entities/Field";
-import { IFieldRepository } from "@/domain/interfaces/IFieldRepository";
+import { db } from "@/lib/db"
+import { Field } from "@/domain/entities/Field"
+import { IFieldRepository } from "@/domain/interfaces/IFieldRepository"
 
 export class FieldRepository implements IFieldRepository {
-  confirm(id: string): unknown {
-    throw new Error("Method not implemented.");
-  }
-  cancel(id: string, reason: string): unknown {
-    throw new Error("Method not implemented.");
-  }
-  reschedule(id: string, date: Date, start: string, end: string): unknown {
-    throw new Error("Method not implemented.");
-  }
   async getAll(): Promise<Field[]> {
-    return await db.field.findMany();
+    const { data, error } = await db.from("field").select("*")
+    if (error) throw error
+    return data as Field[]
   }
 
   async getById(id: string): Promise<Field | null> {
-    return await db.field.findUnique({
-      where: { id },
-    });
+    const { data, error } = await db.from("field").select("*").eq("id", id).single()
+    if (error && error.code !== "PGRST116") throw error
+    return data as Field | null
   }
 
   async create(data: Omit<Field, "id" | "created_at" | "updated_at">): Promise<Field> {
-    return await db.field.create({
-      data: {
-        ...data,
-      },
-    });
+    const { data: created, error } = await db.from("field").insert(data).select().single()
+    if (error) throw error
+    return created as Field
   }
 
-  async update(
-    id: string,
-    data: Partial<Omit<Field, "id" | "created_at" | "updated_at">>
-  ): Promise<Field> {
-    const existing = await db.field.findUnique({ where: { id } });
-    if (!existing) throw new Error("Field not found");
-
-    return await db.field.update({
-      where: { id },
-      data: {
-        ...data,
-        updated_at: new Date(),
-      },
-    });
+  async update(id: string, data: Partial<Omit<Field, "id" | "created_at" | "updated_at">>): Promise<Field> {
+    const { data: updated, error } = await db
+      .from("field")
+      .update({ ...data, updated_at: new Date().toISOString() })
+      .eq("id", id)
+      .select()
+      .single()
+    if (error) throw error
+    return updated as Field
   }
 
   async delete(id: string): Promise<void> {
-    const existing = await db.field.findUnique({ where: { id } });
-    if (!existing) throw new Error("Field not found");
-
-    await db.field.delete({ where: { id } });
+    const { error } = await db.from("field").delete().eq("id", id)
+    if (error) throw error
   }
 
   async activate(id: string): Promise<Field> {
-    const existing = await db.field.findUnique({ where: { id } });
-    if (!existing) throw new Error("Field not found");
-
-    return await db.field.update({
-      where: { id },
-      data: {
-        is_active: true,
-        updated_at: new Date(),
-      },
-    });
+    const { data, error } = await db
+      .from("field")
+      .update({ is_active: true, updated_at: new Date().toISOString() })
+      .eq("id", id)
+      .select()
+      .single()
+    if (error) throw error
+    return data as Field
   }
 
   async deactivate(id: string): Promise<Field> {
-    const existing = await db.field.findUnique({ where: { id } });
-    if (!existing) throw new Error("Field not found");
+    const { data, error } = await db
+      .from("field")
+      .update({ is_active: false, updated_at: new Date().toISOString() })
+      .eq("id", id)
+      .select()
+      .single()
+    if (error) throw error
+    return data as Field
+  }
 
-    return await db.field.update({
-      where: { id },
-      data: {
-        is_active: false,
-        updated_at: new Date(),
-      },
-    });
+  confirm(): unknown {
+    throw new Error("Method not implemented.")
+  }
+
+  cancel(): unknown {
+    throw new Error("Method not implemented.")
+  }
+
+  reschedule(): unknown {
+    throw new Error("Method not implemented.")
   }
 }
