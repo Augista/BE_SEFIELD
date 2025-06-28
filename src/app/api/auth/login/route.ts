@@ -2,38 +2,22 @@ import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { generateToken, verifyPassword } from "@/lib/auth"
 import { User } from "@/domain/entities/User"
+import { withCORS } from "@/lib/cors"
 
-function withCORS(response: NextResponse, request?: NextRequest) {
-  const origin = request?.headers.get("origin")
-
-  const allowedOrigins = [
-    "http://localhost:3000",               // untuk local dev
-    "https://se-field.vercel.app",         // untuk production FE
-  ]
-
-  if (origin && allowedOrigins.includes(origin)) {
-    response.headers.set("Access-Control-Allow-Origin", origin)
-  }
-
-  response.headers.set("Access-Control-Allow-Methods", "POST, OPTIONS")
-  response.headers.set("Access-Control-Allow-Headers", "Content-Type")
-  response.headers.set("Access-Control-Allow-Credentials", "true")
-  return response
-}
-
-
-// Handler untuk preflight (CORS OPTIONS)
-export async function OPTIONS() {
+// Handler untuk preflight (OPTIONS)
+export async function OPTIONS(request: NextRequest) {
   const response = new NextResponse(null, { status: 204 })
-  return withCORS(response)
+  return withCORS(response, request)
 }
 
+// Handler utama POST (login)
 export async function POST(request: NextRequest) {
   const { email, password } = await request.json()
 
   if (!email || !password) {
     return withCORS(
-      NextResponse.json({ error: "Email dan password wajib diisi" }, { status: 400 })
+      NextResponse.json({ error: "Email dan password wajib diisi" }, { status: 400 }),
+      request
     )
   }
 
@@ -46,14 +30,16 @@ export async function POST(request: NextRequest) {
 
   if (error || !users) {
     return withCORS(
-      NextResponse.json({ error: "Email tidak ditemukan" }, { status: 404 })
+      NextResponse.json({ error: "Email tidak ditemukan" }, { status: 404 }),
+      request
     )
   }
 
   const isValid = await verifyPassword(password, users.password)
   if (!isValid) {
     return withCORS(
-      NextResponse.json({ error: "Password salah" }, { status: 401 })
+      NextResponse.json({ error: "Password salah" }, { status: 401 }),
+      request
     )
   }
 
@@ -69,6 +55,7 @@ export async function POST(request: NextRequest) {
 
   const response = NextResponse.json({
     message: "Login berhasil",
+    token, // <- kembalikan token juga kalau mau dipakai di FE
     user: userPayload,
   })
 
@@ -76,8 +63,8 @@ export async function POST(request: NextRequest) {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: 60 * 60, // 1 hour
+    maxAge: 60 * 60, // 1 jam
   })
 
-  return withCORS(response)
+  return withCORS(response, request)
 }
