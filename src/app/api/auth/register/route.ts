@@ -1,36 +1,45 @@
+// app/api/register/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db"; // Supabase client
+import { db } from "@/lib/db";
 import { generateToken, hashPassword } from "@/lib/auth";
 import { User } from "@/domain/entities/User";
 
+function withCORS(response: NextResponse) {
+  response.headers.set("Access-Control-Allow-Origin", "*"); // atau ganti dengan 'http://localhost:3000' untuk lebih aman
+  response.headers.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+  response.headers.set("Access-Control-Allow-Headers", "Content-Type");
+  return response;
+}
+
+// Handle preflight request (OPTIONS)
+export async function OPTIONS() {
+  return withCORS(new NextResponse(null, { status: 204 }));
+}
+
+// Handle POST
 export async function POST(request: NextRequest) {
   const { name, email, password, phone } = await request.json();
 
   if (!email || !password) {
-    return NextResponse.json(
-      { error: "Email dan password wajib diisi" },
-      { status: 400 }
+    return withCORS(
+      NextResponse.json({ error: "Email dan password wajib diisi" }, { status: 400 })
     );
   }
 
-  // Check if user already exists
-  const { data: existingUser, error: existingError } = await db
+  const { data: existingUser } = await db
     .from("user")
     .select("id")
     .eq("email", email)
     .single();
 
   if (existingUser) {
-    return NextResponse.json(
-      { error: "Email sudah digunakan" },
-      { status: 409 }
+    return withCORS(
+      NextResponse.json({ error: "Email sudah digunakan" }, { status: 409 })
     );
   }
 
-  // Hash the password
   const hashedPassword = await hashPassword(password);
 
-  // Create the new user
   const { data: newUser, error: createError } = await db
     .from("user")
     .insert([
@@ -39,16 +48,15 @@ export async function POST(request: NextRequest) {
         password: hashedPassword,
         nama: name || "",
         phone: phone || "",
-        role: "user", // Default role
+        role: "user",
       },
     ])
     .select("*")
     .single();
 
   if (createError || !newUser) {
-    return NextResponse.json(
-      { error: "Gagal membuat pengguna baru" },
-      { status: 500 }
+    return withCORS(
+      NextResponse.json({ error: "Gagal membuat pengguna baru" }, { status: 500 })
     );
   }
 
@@ -57,7 +65,7 @@ export async function POST(request: NextRequest) {
     email: newUser.email,
     nama: newUser.nama,
     role: newUser.role,
-    password: "", 
+    password: "",
   };
 
   const token = generateToken(userPayload);
@@ -71,8 +79,8 @@ export async function POST(request: NextRequest) {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: 60 * 60, // 1 hour
+    maxAge: 60 * 60,
   });
 
-  return response;
+  return withCORS(response);
 }

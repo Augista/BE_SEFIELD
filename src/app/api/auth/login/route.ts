@@ -12,59 +12,67 @@ export async function OPTIONS(request: NextRequest) {
 
 // Handler utama POST (login)
 export async function POST(request: NextRequest) {
-  const { email, password } = await request.json()
+  try {
+    const { email, password } = await request.json()
 
-  if (!email || !password) {
+    if (!email || !password) {
+      return withCORS(
+        NextResponse.json({ error: "Email dan password wajib diisi" }, { status: 400 }),
+        request
+      )
+    }
+
+    const { data: user, error } = await db
+      .from("user")
+      .select("*")
+      .eq("email", email)
+      .limit(1)
+      .single()
+
+    if (error || !user) {
+      return withCORS(
+        NextResponse.json({ error: "Email tidak ditemukan" }, { status: 404 }),
+        request
+      )
+    }
+
+    const isValid = await verifyPassword(password, user.password)
+    if (!isValid) {
+      return withCORS(
+        NextResponse.json({ error: "Password salah" }, { status: 401 }),
+        request
+      )
+    }
+
+    const userPayload: User = {
+      id: user.id,
+      email: user.email,
+      nama: user.nama,
+      role: user.role,
+      password: "",
+    }
+
+    const token = generateToken(userPayload)
+
+    const response = NextResponse.json({
+      message: "Login berhasil",
+      token,
+      user: userPayload,
+    })
+
+    response.cookies.set("authToken", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 60 * 60, // 1 jam
+    })
+
+    return withCORS(response, request)
+  } catch (err) {
+    console.error("Login Error:", err)
     return withCORS(
-      NextResponse.json({ error: "Email dan password wajib diisi" }, { status: 400 }),
+      NextResponse.json({ error: "Terjadi kesalahan pada server" }, { status: 500 }),
       request
     )
   }
-
-  const { data: user, error } = await db
-    .from("user")
-    .select("*")
-    .eq("email", email)
-    .limit(1)
-    .single()
-
-  if (error || !user) {
-    return withCORS(
-      NextResponse.json({ error: "Email tidak ditemukan" }, { status: 404 }),
-      request
-    )
-  }
-
-  const isValid = await verifyPassword(password, user.password)
-  if (!isValid) {
-    return withCORS(
-      NextResponse.json({ error: "Password salah" }, { status: 401 }),
-      request
-    )
-  }
-
-  const userPayload: User = {
-    id: user.id,
-    email: user.email,
-    nama: user.nama,
-    role: user.role,
-    password: "",
-  }
-
-  const token = generateToken(userPayload)
-
-  const response = NextResponse.json({
-    message: "Login berhasil",
-    token, // <- kembalikan token juga kalau mau dipakai di FE
-    user: userPayload,
-  })
-
-  response.cookies.set("authToken", token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 60 * 60, // 1 jam
-  })
-
-  return withCORS(response, request)
 }
