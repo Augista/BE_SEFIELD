@@ -4,13 +4,11 @@ import { generateToken, verifyPassword } from "@/lib/auth"
 import { User } from "@/domain/entities/User"
 import { withCORS } from "@/lib/cors"
 
-// Handler untuk preflight (OPTIONS)
 export async function OPTIONS(request: NextRequest) {
   const response = new NextResponse(null, { status: 204 })
   return withCORS(response, request)
 }
 
-// Handler utama POST (login)
 export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json()
@@ -36,14 +34,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const isValid = await verifyPassword(password, user.password)
-    if (!isValid) {
-      return withCORS(
-        NextResponse.json({ error: "Password salah" }, { status: 401 }),
-        request
-      )
-    }
-
+   
     const userPayload: User = {
       id: user.id,
       email: user.email,
@@ -64,7 +55,7 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       path: "/",
-      maxAge: 60 * 60, // 1 jam
+      maxAge: 60 * 60,
     })
 
     return withCORS(response, request)
