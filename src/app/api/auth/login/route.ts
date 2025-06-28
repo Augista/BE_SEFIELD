@@ -3,14 +3,24 @@ import { db } from "@/lib/db"
 import { generateToken, verifyPassword } from "@/lib/auth"
 import { User } from "@/domain/entities/User"
 
-// Fungsi untuk menambahkan CORS header ke semua response
-function withCORS(response: NextResponse) {
-  response.headers.set("Access-Control-Allow-Origin", "http://localhost:3000")
+function withCORS(response: NextResponse, request?: NextRequest) {
+  const origin = request?.headers.get("origin")
+
+  const allowedOrigins = [
+    "http://localhost:3000",               // untuk local dev
+    "https://se-field.vercel.app",         // untuk production FE
+  ]
+
+  if (origin && allowedOrigins.includes(origin)) {
+    response.headers.set("Access-Control-Allow-Origin", origin)
+  }
+
   response.headers.set("Access-Control-Allow-Methods", "POST, OPTIONS")
   response.headers.set("Access-Control-Allow-Headers", "Content-Type")
   response.headers.set("Access-Control-Allow-Credentials", "true")
   return response
 }
+
 
 // Handler untuk preflight (CORS OPTIONS)
 export async function OPTIONS() {
