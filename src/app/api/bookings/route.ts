@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db"; // Supabase client
 
-// GET: Ambil semua bookings dengan field & user
 export async function GET() {
   try {
     const { data: bookings, error } = await db
@@ -25,7 +24,6 @@ export async function GET() {
   }
 }
 
-// POST: Buat booking baru
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
