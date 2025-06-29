@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db"; // Supabase client
+import { db } from "@/lib/db";
 import { withCORS } from "@/lib/cors";
 import { verifyToken } from "@/lib/auth";
 
-
+export async function OPTIONS(request: NextRequest) {
+  const response = new NextResponse(null, { status: 204 })
+  return withCORS(response, request)
+}
 // GET Handler
 export async function GET(request: NextRequest) {
   try {
