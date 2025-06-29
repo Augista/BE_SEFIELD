@@ -1,8 +1,12 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { withCORS } from "@/lib/cors"
 
-export async function GET() {
+export async function OPTIONS(request: NextRequest) {
+  return withCORS(new NextResponse(null, { status: 204 }), request)
+}
+
+export async function GET(request: NextRequest) {
   try {
     const today = new Date()
     const startOfDay = new Date(today)
@@ -12,11 +16,10 @@ export async function GET() {
     endOfDay.setHours(23, 59, 59, 999)
 
     const oneWeekAgo = new Date()
-    oneWeekAgo.setDate(today.getDate() - 6) // untuk 7 hari total termasuk hari ini
+    oneWeekAgo.setDate(today.getDate() - 6)
     oneWeekAgo.setHours(0, 0, 0, 0)
 
-    // Pemasukan hari ini
-    const { data: todayIncomeData, error: todayIncomeErr } = await db
+    const { data: todayIncomeData } = await db
       .from("booking")
       .select("total_price")
       .gte("booking_date", startOfDay.toISOString())
@@ -25,8 +28,7 @@ export async function GET() {
 
     const todayIncome = todayIncomeData?.reduce((sum, b) => sum + Number(b.total_price), 0) || 0
 
-    // Pemasukan per hari selama seminggu
-    const { data: weekData, error: weekErr } = await db
+    const { data: weekData } = await db
       .from("booking")
       .select("booking_date, total_price")
       .gte("booking_date", oneWeekAgo.toISOString())
@@ -50,8 +52,7 @@ export async function GET() {
 
     const weeklyIncome = Object.entries(weeklyMap).map(([date, total]) => ({ date, total }))
 
-    // Total user yg booking hari ini
-    const { data: userToday, error: userErr } = await db
+    const { data: userToday } = await db
       .from("booking")
       .select("user_id")
       .gte("booking_date", startOfDay.toISOString())
@@ -60,8 +61,7 @@ export async function GET() {
 
     const totalUsers = new Set(userToday?.map(b => b.user_id)).size
 
-    // Jam terisi per lapangan
-    const { data: jamData, error: jamErr } = await db
+    const { data: jamData } = await db
       .from("booking")
       .select("field_id, start_time, end_time")
       .gte("booking_date", startOfDay.toISOString())
@@ -80,7 +80,6 @@ export async function GET() {
       }
     }) || []
 
-    // Data user hari ini
     const { data: bookingDetail } = await db
       .from("booking")
       .select("user_name, total_price, start_time, end_time, field_id")
@@ -98,15 +97,21 @@ export async function GET() {
       }
     }) || []
 
-    return withCORS(NextResponse.json({
+    const response = NextResponse.json({
       todayIncome,
       weeklyIncome,
       totalUsers,
       occupiedTimes,
       todayBookings: bookingWithField
-    }))
+    })
+
+    return withCORS(response, request)
+
   } catch (err) {
     console.error("[SUMMARY ERROR]", err)
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
+    return withCORS(
+      NextResponse.json({ error: "Internal Server Error" }, { status: 500 }),
+      request
+    )
   }
 }
