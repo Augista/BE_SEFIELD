@@ -4,9 +4,10 @@ import { withCORS } from "@/lib/cors";
 import { verifyToken } from "@/lib/auth";
 
 export async function OPTIONS(request: NextRequest) {
-  const response = new NextResponse(null, { status: 204 })
-  return withCORS(response, request)
+  const response = new NextResponse(null, { status: 204 });
+  return withCORS(response, request);
 }
+
 // GET Handler
 export async function GET(request: NextRequest) {
   try {
@@ -51,23 +52,25 @@ export async function POST(req: NextRequest) {
       user_phone,
       booking_date,
       start_time,
-      duration,
+      duration_hour,
       virtual_account,
-      price,
+      total_price,
       payment_deadline,
       end_time,
     } = body;
 
+    // Validasi field wajib
     if (
       !field_id ||
       !user_name ||
       !user_phone ||
       !booking_date ||
       !start_time ||
-      !virtual_account
+      !virtual_account ||
+      typeof total_price !== "number"
     ) {
       return withCORS(
-        NextResponse.json({ error: "Data tidak lengkap" }, { status: 400 }),
+        NextResponse.json({ error: "Data tidak lengkap atau tidak valid" }, { status: 400 }),
         req
       );
     }
@@ -84,11 +87,11 @@ export async function POST(req: NextRequest) {
           booking_date: new Date(booking_date).toISOString(),
           start_time,
           end_time,
-          total_price: price,
+          total_price,
           status: "pending",
           payment_deadline: new Date(payment_deadline).toISOString(),
           notes: null,
-          duration_hour: duration,
+          duration_hour,
           virtual_account,
         },
       ])
@@ -118,4 +121,3 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-
