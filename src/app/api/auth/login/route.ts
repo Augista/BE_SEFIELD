@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
 
     response.cookies.set("authToken", token, {
       httpOnly: true,
-      secure: false,
+      secure: process.env.NODE_ENV === "production",
       sameSite: "none",  
       path: "/",
       maxAge: 60 * 60,
