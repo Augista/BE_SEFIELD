@@ -4,10 +4,9 @@ import { withCORS } from "@/lib/cors"
 import { Field } from "@/domain/entities/Field"
 import { createClient } from "@supabase/supabase-js"
 
-// Setup Supabase client
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! // gunakan key yang punya akses storage
+  process.env.SUPABASE_SERVICE_ROLE_KEY! 
 )
 
 export async function OPTIONS(req: NextRequest) {
