@@ -59,15 +59,5 @@ export class FieldRepository implements IFieldRepository {
     return data as Field
   }
 
-  confirm(): unknown {
-    throw new Error("Method not implemented.")
-  }
-
-  cancel(): unknown {
-    throw new Error("Method not implemented.")
-  }
-
-  reschedule(): unknown {
-    throw new Error("Method not implemented.")
-  }
+ 
 }

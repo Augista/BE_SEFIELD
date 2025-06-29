@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db"; // Supabase client
+import { db } from "@/lib/db"; 
 
 export async function GET() {
   try {
@@ -92,7 +92,6 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Utility: Hitung durasi dalam menit dari waktu mulai dan akhir (format: "HH:mm" atau "HH:mm:ss")
 function calculateDuration(start: string, end: string): number {
   const [sh, sm] = start.split(":").map(Number);
   const [eh, em] = end.split(":").map(Number);

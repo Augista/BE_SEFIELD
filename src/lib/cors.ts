@@ -12,7 +12,7 @@ export function withCORS(response: NextResponse, request?: NextRequest) {
     response.headers.set("Access-Control-Allow-Origin", origin)
   }
 
-  response.headers.set("Access-Control-Allow-Methods", "POST, OPTIONS")
+  response.headers.set("Access-Control-Allow-Methods", "GET,POST, OPTIONS")
   response.headers.set("Access-Control-Allow-Headers", "Content-Type")
   response.headers.set("Access-Control-Allow-Credentials", "true")
   return response

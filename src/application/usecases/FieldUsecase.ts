@@ -4,18 +4,22 @@ import { Field } from "@/domain/entities/Field";
 export class FieldUsecase {
   constructor(private fieldRepo: IFieldRepository) {}
 
-  getAllField(): Promise<Field[]> {
+  // Ambil semua field aktif/tidak aktif
+  getAllFields(): Promise<Field[]> {
     return this.fieldRepo.getAll();
   }
 
+  // Ambil field berdasarkan ID
   getFieldById(id: string): Promise<Field | null> {
     return this.fieldRepo.getById(id);
   }
 
+  // Tambah field baru
   createField(data: Omit<Field, "id" | "created_at" | "updated_at">): Promise<Field> {
     return this.fieldRepo.create(data);
   }
 
+  // Update sebagian data field berdasarkan ID
   updateField(
     id: string,
     data: Partial<Omit<Field, "id" | "created_at" | "updated_at">>
@@ -23,26 +27,17 @@ export class FieldUsecase {
     return this.fieldRepo.update(id, data);
   }
 
+  // Soft delete atau penghapusan lapangan
   deleteField(id: string): Promise<void> {
     return this.fieldRepo.delete(id);
   }
 
-  confirmField(id: string): unknown {
-    return this.fieldRepo.confirm(id);
-  }
-
-  cancelField(id: string, reason: string): unknown {
-    return this.fieldRepo.cancel(id, reason);
-  }
-
-  rescheduleField(id: string, date: Date, start: string, end: string): unknown {
-    return this.fieldRepo.reschedule(id, date, start, end);
-  }
-
+  // Aktifkan field (set is_active = true)
   activateField(id: string): Promise<Field> {
     return this.fieldRepo.activate(id);
   }
 
+  // Nonaktifkan field (set is_active = false)
   deactivateField(id: string): Promise<Field> {
     return this.fieldRepo.deactivate(id);
   }

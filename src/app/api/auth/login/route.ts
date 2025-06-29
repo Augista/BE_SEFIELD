@@ -34,7 +34,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-   
     const userPayload: User = {
       id: user.id,
       email: user.email,
@@ -53,7 +52,8 @@ export async function POST(request: NextRequest) {
 
     response.cookies.set("authToken", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: false,
+      sameSite: "none",  
       path: "/",
       maxAge: 60 * 60,
     })

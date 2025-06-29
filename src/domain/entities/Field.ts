@@ -3,11 +3,11 @@ export interface Field {
   name: string;
   type: string;
   price: number;
-  image?: string;
-  description?: string;
+  image: string | null; 
+  description: string | null; 
   operational_start: string;
   operational_end: string;
   is_active: boolean;
-  created_at: Date;
-  updated_at: Date;
+  created_at: string; 
+  updated_at: string;
 }

@@ -5,7 +5,7 @@ export class FieldController {
   constructor(private usecase: FieldUsecase) {}
 
   async index(): Promise<Field[]> {
-    return await this.usecase.getAllField();
+    return await this.usecase.getAllFields(); // updated method name
   }
 
   async show(id: string): Promise<Field | null> {
@@ -25,18 +25,6 @@ export class FieldController {
 
   async destroy(id: string): Promise<void> {
     return await this.usecase.deleteField(id);
-  }
-
-  async confirm(id: string): Promise<unknown> {
-    return await this.usecase.confirmField(id);
-  }
-
-  async cancel(id: string, reason: string): Promise<unknown> {
-    return await this.usecase.cancelField(id, reason);
-  }
-
-  async reschedule(id: string, date: Date, start: string, end: string): Promise<unknown> {
-    return await this.usecase.rescheduleField(id, date, start, end);
   }
 
   async activate(id: string): Promise<Field> {
