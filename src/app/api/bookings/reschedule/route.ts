@@ -1,22 +1,29 @@
-import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { verifyToken } from "@/lib/auth";
-import { withCORS } from "@/lib/cors";
+import { NextRequest, NextResponse } from "next/server"
+import { db } from "@/lib/db"
+import { verifyToken } from "@/lib/auth"
+import { withCORS } from "@/lib/cors"
+
+export async function OPTIONS(req: NextRequest) {
+  const response = new NextResponse(null, { status: 204 })
+  return withCORS(response, req)
+}
 
 export async function POST(req: NextRequest) {
-  const token = req.headers.get("Authorization")?.replace("Bearer ", "");
+  const token = req.headers.get("Authorization")?.replace("Bearer ", "")
 
   if (!token) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const response = NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    return withCORS(response, req)
   }
 
-  const decoded = verifyToken(token);
+  const decoded = verifyToken(token)
   if (!decoded?.id) {
-    return NextResponse.json({ error: "Invalid token" }, { status: 403 });
+    const response = NextResponse.json({ error: "Invalid token" }, { status: 403 })
+    return withCORS(response, req)
   }
 
-  const body = await req.json();
-  const { bookingId, newDate, newTime } = body;
+  const body = await req.json()
+  const { bookingId, newDate, newTime } = body
 
   const { error } = await db
     .from("booking")
@@ -26,11 +33,13 @@ export async function POST(req: NextRequest) {
       hasBeenRescheduled: true,
     })
     .eq("id", bookingId)
-    .eq("user_id", decoded.id); // 🟢 Ganti ke decoded.id
+    .eq("user_id", decoded.id)
 
   if (error) {
-    return NextResponse.json({ error: "Gagal reschedule" }, { status: 500 });
+    const response = NextResponse.json({ error: "Gagal reschedule" }, { status: 500 })
+    return withCORS(response, req)
   }
 
-  return NextResponse.json({ success: true });
+  const response = NextResponse.json({ success: true })
+  return withCORS(response, req)
 }

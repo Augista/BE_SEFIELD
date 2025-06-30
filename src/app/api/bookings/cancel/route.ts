@@ -3,6 +3,12 @@ import { db } from "@/lib/db"
 import { verifyToken } from "@/lib/auth"
 import { withCORS } from "@/lib/cors"
 
+export async function OPTIONS(req: NextRequest) {
+  const response = new NextResponse(null, { status: 204 })
+  return withCORS(response, req)
+}
+
+
 export async function POST(req: NextRequest) {
   const token = req.headers.get("Authorization")?.replace("Bearer ", "")
 

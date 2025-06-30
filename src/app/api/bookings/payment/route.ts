@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { verifyToken } from "@/lib/auth"
+import { withCORS } from "@/lib/cors"
 import midtransClient from "midtrans-client"
+
+export async function OPTIONS(req: NextRequest) {
+  const response = new NextResponse(null, { status: 204 })
+  return withCORS(response, req)
+}
+
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,12 +16,12 @@ export async function POST(req: NextRequest) {
     const user = token ? verifyToken(token) : null
 
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      const response = NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return withCORS(response, req)
     }
 
     const { bookingId } = await req.json()
 
-    // Ambil detail booking dari DB
     const { data: booking, error } = await db
       .from("booking")
       .select("*")
@@ -23,12 +30,12 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (error || !booking) {
-      return NextResponse.json({ error: "Booking tidak ditemukan" }, { status: 404 })
+      const response = NextResponse.json({ error: "Booking tidak ditemukan" }, { status: 404 })
+      return withCORS(response, req)
     }
 
     const { id: orderId, total_price: grossAmount, user_name, user_email } = booking
 
-    // Init Midtrans Snap
     const snap = new midtransClient.Snap({
       isProduction: false,
       serverKey: process.env.MIDTRANS_SERVER_KEY as string,
@@ -49,9 +56,11 @@ export async function POST(req: NextRequest) {
     const transaction = await snap.createTransaction(parameter)
     const snapToken = transaction.token
 
-    return NextResponse.json({ token: snapToken })
+    const response = NextResponse.json({ token: snapToken })
+    return withCORS(response, req)
   } catch (error) {
     console.error("[MIDTRANS ERROR]", error)
-    return NextResponse.json({ error: "Failed to create transaction" }, { status: 500 })
+    const response = NextResponse.json({ error: "Failed to create transaction" }, { status: 500 })
+    return withCORS(response, req)
   }
 }
