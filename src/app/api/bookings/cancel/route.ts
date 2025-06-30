@@ -1,17 +1,36 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
-
+import { verifyToken } from "@/lib/auth"
+import { withCORS } from "@/lib/cors"
 
 export async function POST(req: NextRequest) {
-  const { booking_id, reason } = await req.json()
-  const updated = await db.from("booking").update({
-    where: { id: booking_id },
-    data: {
-      status: "cancelled",
-      cancellation_reason: reason,
-      cancelled_at: new Date(),
-      updated_at: new Date()
-    }
-  })
-  return NextResponse.json(updated)
+  const token = req.headers.get("Authorization")?.replace("Bearer ", "")
+
+  if (!token) {
+    const response = NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    return withCORS(response, req)
+  }
+
+  const decoded = verifyToken(token)
+  if (!decoded?.id) {
+    const response = NextResponse.json({ error: "Invalid token" }, { status: 403 })
+    return withCORS(response, req)
+  }
+
+  const body = await req.json()
+  const { bookingId } = body
+
+  const { error } = await db
+    .from("booking")
+    .update({ status: "cancelled" })
+    .eq("id", bookingId)
+    .eq("user_id", decoded.id)
+
+  if (error) {
+    const response = NextResponse.json({ error: "Gagal membatalkan booking" }, { status: 500 })
+    return withCORS(response, req)
+  }
+
+  const response = NextResponse.json({ success: true })
+  return withCORS(response, req)
 }

@@ -7,10 +7,29 @@ export async function OPTIONS(request: NextRequest) {
   const response = new NextResponse(null, { status: 204 });
   return withCORS(response, request);
 }
-
 // GET Handler
 export async function GET(request: NextRequest) {
   try {
+    const authHeader = request.headers.get("Authorization")
+    if (!authHeader) {
+      return withCORS(
+        NextResponse.json({ error: "Tidak ada token" }, { status: 401 }),
+        request
+      )
+    }
+
+    const token = authHeader.replace("Bearer ", "")
+    const decoded = verifyToken(token)
+
+    if (!decoded || !decoded.id) {
+      return withCORS(
+        NextResponse.json({ error: "Token tidak valid" }, { status: 403 }),
+        request
+      )
+    }
+
+    const userId = decoded.id
+
     const { data: bookings, error } = await db
       .from("booking")
       .select(`
@@ -18,19 +37,26 @@ export async function GET(request: NextRequest) {
         field:field_id(*),
         user:user_id(*)
       `)
-      .order("booking_date", { ascending: false });
+      .eq("user_id", userId)
+      .order("booking_date", { ascending: false })
 
-    const response = error
-      ? NextResponse.json({ error: "Gagal mengambil data booking" }, { status: 500 })
-      : NextResponse.json({ bookings });
+    if (error) {
+      return withCORS(
+        NextResponse.json({ error: "Gagal mengambil data booking" }, { status: 500 }),
+        request
+      )
+    }
 
-    return withCORS(response, request);
+    return withCORS(NextResponse.json({ bookings }), request)
   } catch (error) {
-    console.error("[GET BOOKINGS]", error);
-    const response = NextResponse.json({ error: "Gagal mengambil data booking" }, { status: 500 });
-    return withCORS(response, request);
+    console.error("[GET BOOKINGS]", error)
+    return withCORS(
+      NextResponse.json({ error: "Terjadi kesalahan internal" }, { status: 500 }),
+      request
+    )
   }
 }
+
 
 // POST Handler
 export async function POST(req: NextRequest) {
