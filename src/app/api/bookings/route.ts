@@ -147,3 +147,45 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+// PATCH Handler
+export async function PATCH(req: NextRequest) {
+  try {
+    const token =
+      req.cookies.get("authToken")?.value ||
+      req.headers.get("Authorization")?.replace("Bearer ", "");
+
+    const user = token ? verifyToken(token) : null;
+    if (!user) {
+      return withCORS(
+        NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
+        req
+      );
+    }
+
+    const { bookingId, updates } = await req.json();
+
+    const { data, error } = await db
+      .from("booking")
+      .update(updates)
+      .eq("id", bookingId)
+      .eq("user_id", user.id)
+      .select("*")
+      .single();
+
+    if (error) {
+      console.error("[PATCH BOOKINGS]", error);
+      return withCORS(
+        NextResponse.json({ error: "Gagal memperbarui booking" }, { status: 500 }),
+        req
+      );
+    }
+
+    return withCORS(NextResponse.json({ booking: data }), req);
+  } catch (error) {
+    console.error("[PATCH BOOKINGS]", error);
+    return withCORS(
+      NextResponse.json({ error: "Gagal memperbarui booking" }, { status: 500 }),
+      req
+    );
+  }
+}
