@@ -3,27 +3,22 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { generateToken, hashPassword } from "@/lib/auth";
 import { User } from "@/domain/entities/User";
+import { withCORS } from "@/lib/cors";
 
-function withCORS(response: NextResponse) {
-  response.headers.set("Access-Control-Allow-Origin", "*"); // atau ganti dengan 'http://localhost:3000' untuk lebih aman
-  response.headers.set("Access-Control-Allow-Methods", "POST, OPTIONS");
-  response.headers.set("Access-Control-Allow-Headers", "Content-Type");
-  return response;
+export async function OPTIONS(req: NextRequest) {
+  const res = new NextResponse(null, { status: 204 });
+  return withCORS(res, req);
 }
 
-// Handle preflight request (OPTIONS)
-export async function OPTIONS() {
-  return withCORS(new NextResponse(null, { status: 204 }));
-}
-
-// Handle POST
 export async function POST(request: NextRequest) {
   const { name, email, password, phone } = await request.json();
 
   if (!email || !password) {
-    return withCORS(
-      NextResponse.json({ error: "Email dan password wajib diisi" }, { status: 400 })
+    const res = NextResponse.json(
+      { error: "Email dan password wajib diisi" },
+      { status: 400 }
     );
+    return withCORS(res, request);
   }
 
   const { data: existingUser } = await db
@@ -33,9 +28,11 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (existingUser) {
-    return withCORS(
-      NextResponse.json({ error: "Email sudah digunakan" }, { status: 409 })
+    const res = NextResponse.json(
+      { error: "Email sudah digunakan" },
+      { status: 409 }
     );
+    return withCORS(res, request);
   }
 
   const hashedPassword = await hashPassword(password);
@@ -55,9 +52,11 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (createError || !newUser) {
-    return withCORS(
-      NextResponse.json({ error: "Gagal membuat pengguna baru" }, { status: 500 })
+    const res = NextResponse.json(
+      { error: "Gagal membuat pengguna baru" },
+      { status: 500 }
     );
+    return withCORS(res, request);
   }
 
   const userPayload: User = {
@@ -70,17 +69,17 @@ export async function POST(request: NextRequest) {
 
   const token = generateToken(userPayload);
 
-  const response = NextResponse.json({
+  const res = NextResponse.json({
     message: "Registrasi berhasil",
     user: userPayload,
   });
 
-  response.cookies.set("authToken", token, {
+  res.cookies.set("authToken", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: 60 * 60,
+    maxAge: 60 * 60, // 1 jam
   });
 
-  return withCORS(response);
+  return withCORS(res, request);
 }

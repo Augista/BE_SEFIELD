@@ -1,3 +1,4 @@
+
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { withCORS } from "@/lib/cors";
@@ -7,28 +8,30 @@ export async function OPTIONS(request: NextRequest) {
   const response = new NextResponse(null, { status: 204 });
   return withCORS(response, request);
 }
-// GET Handler
+
 export async function GET(request: NextRequest) {
   try {
-    const authHeader = request.headers.get("Authorization")
+    const authHeader = request.headers.get("Authorization");
     if (!authHeader) {
-      return withCORS(
-        NextResponse.json({ error: "Tidak ada token" }, { status: 401 }),
-        request
-      )
+      const res = NextResponse.json(
+        { error: "Tidak ada token" },
+        { status: 401 }
+      );
+      return withCORS(res, request);
     }
 
-    const token = authHeader.replace("Bearer ", "")
-    const decoded = verifyToken(token)
+    const token = authHeader.replace("Bearer ", "");
+    const decoded = verifyToken(token);
 
     if (!decoded || !decoded.id) {
-      return withCORS(
-        NextResponse.json({ error: "Token tidak valid" }, { status: 403 }),
-        request
-      )
+      const res = NextResponse.json(
+        { error: "Token tidak valid" },
+        { status: 403 }
+      );
+      return withCORS(res, request);
     }
 
-    const userId = decoded.id
+    const userId = decoded.id;
 
     const { data: bookings, error } = await db
       .from("booking")
@@ -38,37 +41,42 @@ export async function GET(request: NextRequest) {
         user:user_id(*)
       `)
       .eq("user_id", userId)
-      .order("booking_date", { ascending: false })
+      .order("booking_date", { ascending: false });
 
     if (error) {
-      return withCORS(
-        NextResponse.json({ error: "Gagal mengambil data booking" }, { status: 500 }),
-        request
-      )
+      const res = NextResponse.json(
+        { error: "Gagal mengambil data booking" },
+        { status: 500 }
+      );
+      return withCORS(res, request);
     }
 
-    return withCORS(NextResponse.json({ bookings }), request)
+    const res = NextResponse.json({ bookings });
+    return withCORS(res, request);
   } catch (error) {
-    console.error("[GET BOOKINGS]", error)
-    return withCORS(
-      NextResponse.json({ error: "Terjadi kesalahan internal" }, { status: 500 }),
-      request
-    )
+    console.error("[GET BOOKINGS]", error);
+    const res = NextResponse.json(
+      { error: "Terjadi kesalahan internal" },
+      { status: 500 }
+    );
+    return withCORS(res, request);
   }
 }
 
-
-// POST Handler
 export async function POST(req: NextRequest) {
   try {
-    const token = req.cookies.get("authToken")?.value;
+    const token =
+      req.cookies.get("authToken")?.value ||
+      req.headers.get("Authorization")?.replace("Bearer ", "");
+
     const user = token ? verifyToken(token) : null;
 
     if (!user) {
-      return withCORS(
-        NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
-        req
+      const res = NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
       );
+      return withCORS(res, req);
     }
 
     const body = await req.json();
@@ -95,10 +103,11 @@ export async function POST(req: NextRequest) {
       !virtual_account ||
       typeof total_price !== "number"
     ) {
-      return withCORS(
-        NextResponse.json({ error: "Data tidak lengkap atau tidak valid" }, { status: 400 }),
-        req
+      const res = NextResponse.json(
+        { error: "Data tidak lengkap atau tidak valid" },
+        { status: 400 }
       );
+      return withCORS(res, req);
     }
 
     const { data: insertedBooking, error: insertError } = await db
@@ -126,28 +135,25 @@ export async function POST(req: NextRequest) {
 
     if (insertError) {
       console.error("[POST BOOKINGS]", insertError);
-      return withCORS(
-        NextResponse.json(
-          { error: "Gagal membuat booking", details: insertError.message },
-          { status: 500 }
-        ),
-        req
+      const res = NextResponse.json(
+        { error: "Gagal membuat booking", details: insertError.message },
+        { status: 500 }
       );
+      return withCORS(res, req);
     }
 
-    return withCORS(
-      NextResponse.json({ booking: insertedBooking }, { status: 201 }),
-      req
-    );
+    const res = NextResponse.json({ booking: insertedBooking }, { status: 201 });
+    return withCORS(res, req);
   } catch (error) {
     console.error("[POST BOOKINGS]", error);
-    return withCORS(
-      NextResponse.json({ error: "Gagal membuat booking" }, { status: 500 }),
-      req
+    const res = NextResponse.json(
+      { error: "Gagal membuat booking" },
+      { status: 500 }
     );
+    return withCORS(res, req);
   }
 }
-// PATCH Handler
+
 export async function PATCH(req: NextRequest) {
   try {
     const token =
@@ -156,10 +162,11 @@ export async function PATCH(req: NextRequest) {
 
     const user = token ? verifyToken(token) : null;
     if (!user) {
-      return withCORS(
-        NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
-        req
+      const res = NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
       );
+      return withCORS(res, req);
     }
 
     const { bookingId, updates } = await req.json();
@@ -174,18 +181,21 @@ export async function PATCH(req: NextRequest) {
 
     if (error) {
       console.error("[PATCH BOOKINGS]", error);
-      return withCORS(
-        NextResponse.json({ error: "Gagal memperbarui booking" }, { status: 500 }),
-        req
+      const res = NextResponse.json(
+        { error: "Gagal memperbarui booking" },
+        { status: 500 }
       );
+      return withCORS(res, req);
     }
 
-    return withCORS(NextResponse.json({ booking: data }), req);
+    const res = NextResponse.json({ booking: data });
+    return withCORS(res, req);
   } catch (error) {
     console.error("[PATCH BOOKINGS]", error);
-    return withCORS(
-      NextResponse.json({ error: "Gagal memperbarui booking" }, { status: 500 }),
-      req
+    const res = NextResponse.json(
+      { error: "Gagal memperbarui booking" },
+      { status: 500 }
     );
+    return withCORS(res, req);
   }
 }
