@@ -92,7 +92,7 @@ async function uploadFieldImage(file: File): Promise<{ success: boolean, url?: s
       contentType: file.type,
       upsert: false
     })
-
+    
   if (uploadError) {
     console.error("[UPLOAD IMAGE ERROR]", uploadError)
     return { success: false, error: "Gagal mengupload gambar ke storage" }

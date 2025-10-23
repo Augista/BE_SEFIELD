@@ -2,13 +2,11 @@ import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { verifyToken } from "@/lib/auth"
 import { withCORS } from "@/lib/cors"
-import midtransClient from "midtrans-client"
 
 export async function OPTIONS(req: NextRequest) {
   const response = new NextResponse(null, { status: 204 })
   return withCORS(response, req)
 }
-
 
 export async function POST(req: NextRequest) {
   try {
@@ -34,33 +32,18 @@ export async function POST(req: NextRequest) {
       return withCORS(response, req)
     }
 
-    const { id: orderId, total_price: grossAmount, user_name, user_email } = booking
-
-    const snap = new midtransClient.Snap({
-      isProduction: false,
-      serverKey: process.env.MIDTRANS_SERVER_KEY as string,
-      clientKey: process.env.MIDTRANS_CLIENT_KEY,
+    // Instead of Midtrans, just return booking data or dummy payment info
+    const response = NextResponse.json({
+      message: "Payment service disabled (Midtrans not configured)",
+      booking,
     })
-
-    const parameter = {
-      transaction_details: {
-        order_id: orderId,
-        gross_amount: grossAmount,
-      },
-      customer_details: {
-        first_name: user_name,
-        email: user_email,
-      },
-    }
-
-    const transaction = await snap.createTransaction(parameter)
-    const snapToken = transaction.token
-
-    const response = NextResponse.json({ token: snapToken })
     return withCORS(response, req)
   } catch (error) {
-    console.error("[MIDTRANS ERROR]", error)
-    const response = NextResponse.json({ error: "Failed to create transaction" }, { status: 500 })
+    console.error("[PAYMENT ERROR]", error)
+    const response = NextResponse.json(
+      { error: "Failed to process payment (service disabled)" },
+      { status: 500 }
+    )
     return withCORS(response, req)
   }
 }
